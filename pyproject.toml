@@ -30,6 +30,8 @@ creart = "^0.3.0"
 mutagen = "^1.47.0"
 hishel = "^0.1.2"
 async-lru = "^2.0.5"
+fastapi = "^0.111.1"
+uvicorn = "^0.30.3"
 
 [build-system]
 requires = ["poetry-core"]

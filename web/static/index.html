@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AppleMusicDecrypt</title>
+    <style>
+        body { font-family: sans-serif; }
+        #tasks { margin-top: 1em; border-collapse: collapse; width: 100%; }
+        #tasks th, #tasks td { border: 1px solid #ddd; padding: 8px; }
+        #tasks th { padding-top: 12px; padding-bottom: 12px; text-align: left; background-color: #4CAF50; color: white; }
+    </style>
+</head>
+<body>
+    <h1>AppleMusicDecrypt</h1>
+    <div>
+        <input id="urlInput" type="text" size="50" placeholder="Enter Apple Music URL"/>
+        <button onclick="startDownload()">Download</button>
+    </div>
+
+    <h2>Progress</h2>
+    <div>
+        <span>Download Speed: <b id="downloadSpeed">0 B/s</b></span> | 
+        <span>Decrypt Speed: <b id="decryptSpeed">0 B/s</b></span>
+    </div>
+
+    <h2>Tasks</h2>
+    <table id="tasks">
+        <thead>
+            <tr>
+                <th>Artist</th>
+                <th>Title</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <h2>Log</h2>
+    <pre id="log" style="white-space: pre-wrap; word-wrap: break-word; height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 5px;"></pre>
+
+    <script>
+        var ws = new WebSocket("ws://localhost:8000/ws");
+        var logElement = document.getElementById('log');
+        var downloadSpeedElement = document.getElementById('downloadSpeed');
+        var decryptSpeedElement = document.getElementById('decryptSpeed');
+        var tasksTableBody = document.querySelector("#tasks tbody");
+
+        ws.onmessage = function(event) {
+            var data = JSON.parse(event.data);
+            if (data.type === 'log') {
+                logElement.innerHTML += data.message + '\n';
+                logElement.scrollTop = logElement.scrollHeight;
+            } else if (data.type === 'progress') {
+                downloadSpeedElement.textContent = data.download_speed;
+                decryptSpeedElement.textContent = data.decrypt_speed;
+
+                // Update tasks table
+                tasksTableBody.innerHTML = ''; // Clear table
+                data.tasks.forEach(function(task) {
+                    var row = tasksTableBody.insertRow();
+                    var artistCell = row.insertCell(0);
+                    var titleCell = row.insertCell(1);
+                    var statusCell = row.insertCell(2);
+                    artistCell.textContent = task.artist;
+                    titleCell.textContent = task.name;
+                    statusCell.textContent = task.status;
+                });
+            }
+        };
+
+        function startDownload() {
+            var url = document.getElementById("urlInput").value;
+            ws.send(url);
+        }
+    </script>
+</body>
+</html>

@@ -17,7 +17,7 @@ from pydantic import ValidationError
 
 from src.config import Config
 from src.exceptions import NotTimeSyncedLyricsException
-from src.logger import GlobalLogger
+# from src.logger import GlobalLogger
 from src.models import PlaylistInfo
 from src.models.album_meta import Tracks
 from src.types import *
@@ -66,6 +66,8 @@ def timeit(func):
             return func(*args, **params)
 
     async def helper(*args, **params):
+        # 将导入移到函数内部
+        from src.logger import GlobalLogger
         start = time.time()
         result = await process(func, *args, **params)
         it(GlobalLogger).logger.debug(f'{func.__name__}: {time.time() - start}')
@@ -253,6 +255,8 @@ async def run_sync(task: Callable, *args):
 
 
 def safely_create_task(coro):
+    # 将导入移到函数内部
+    from src.logger import GlobalLogger
     task = it(AbstractEventLoop).create_task(coro)
     background_tasks.add(task)
 

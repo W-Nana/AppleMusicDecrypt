@@ -1,12 +1,12 @@
 import asyncio
 import subprocess
-from typing import Dict
+from typing import Dict, Callable, Awaitable
 
 from creart import it
 
 from src.api import WebAPI
 from src.config import Config
-from src.flags import Flags
+from src.flags import Flags  # <--- I've added this line
 from src.grpc.manager import WrapperManager, WrapperManagerException
 from src.logger import RipLogger
 from src.measurer import SpeedMeasurer
@@ -35,7 +35,8 @@ async def task_done(task: Task, status: Status):
     task.update_status(status)
     if task.parentDone:
         await task.parentDone.try_done()
-    del adam_id_task_mapping[task.adamId]
+    if task.adamId in adam_id_task_mapping:
+        del adam_id_task_mapping[task.adamId]
 
 
 async def on_decrypt_success(adam_id: str, key: str, sample: bytes, sample_index: int):
@@ -48,6 +49,8 @@ async def on_decrypt_failed(adam_id: str, key: str, sample: bytes, sample_index:
 
 
 async def recv_decrypted_sample(adam_id: str, sample_index: int, sample: bytes):
+    if adam_id not in adam_id_task_mapping:
+        return
     task = adam_id_task_mapping[adam_id]
     task.decryptedSamples[sample_index] = sample
     task.decryptedCount += 1
@@ -56,6 +59,8 @@ async def recv_decrypted_sample(adam_id: str, sample_index: int, sample: bytes):
 
 
 async def decrypt_done(adam_id: str):
+    if adam_id not in adam_id_task_mapping:
+        return
     task = adam_id_task_mapping[adam_id]
     codec = get_codec_from_codec_id(task.m3u8Info.codec_id)
 
@@ -83,10 +88,11 @@ async def decrypt_done(adam_id: str):
 
 
 async def rip_song(url: Song, codec: str, flags: Flags = Flags(),
-                   parent_done: ParentDoneHandler = None, playlist: PlaylistInfo = None):
+                   parent_done: ParentDoneHandler = None, playlist: PlaylistInfo = None,
+                   log_callback: Callable[[str], Awaitable[None]] = None):
     task = Task(adam_id=url.id, parent_done=parent_done, playlist=playlist)
     adam_id_task_mapping[url.id] = task
-    task.init_logger()
+    task.logger = RipLogger(URLType.Song, task.adamId, log_callback)
     await task_lock.acquire()
 
     # Set Metadata
@@ -201,9 +207,10 @@ async def rip_song_legacy(task: Task):
         subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done: ParentDoneHandler = None):
+async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done: ParentDoneHandler = None,
+                    log_callback: Callable[[str], Awaitable[None]] = None):
     album_info = await it(WebAPI).get_album_info(url.id, url.storefront, it(Config).region.language)
-    logger = RipLogger(url.type, url.id)
+    logger = RipLogger(url.type, url.id, log_callback)
     logger.set_fullname(album_info.data[0].attributes.artistName, album_info.data[0].attributes.name)
 
     logger.create()
@@ -220,12 +227,13 @@ async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done:
 
     for track in album_info.data[0].relationships.tracks.data:
         song = Song(id=track.id, storefront=url.storefront, url="", type=URLType.Song)
-        safely_create_task(rip_song(song, codec, flags, done_handler))
+        safely_create_task(rip_song(song, codec, flags, done_handler, log_callback=log_callback))
 
 
-async def rip_artist(url: Album, codec: str, flags: Flags = Flags()):
+async def rip_artist(url: Album, codec: str, flags: Flags = Flags(),
+                     log_callback: Callable[[str], Awaitable[None]] = None):
     artist_info = await it(WebAPI).get_artist_info(url.id, url.storefront, it(Config).region.language)
-    logger = RipLogger(url.type, url.id)
+    logger = RipLogger(url.type, url.id, log_callback)
     logger.set_fullname(artist_info.data[0].attributes.name)
 
     logger.create()
@@ -237,18 +245,20 @@ async def rip_artist(url: Album, codec: str, flags: Flags = Flags()):
         songs = await it(WebAPI).get_songs_from_artist(url.id, url.storefront, it(Config).region.language)
         done_handler = ParentDoneHandler(len(songs), on_children_done)
         for song_url in songs:
-            safely_create_task(rip_song(Song.parse_url(song_url), codec, flags, done_handler))
+            safely_create_task(rip_song(Song.parse_url(song_url), codec, flags, done_handler, log_callback=log_callback))
     else:
         albums = await it(WebAPI).get_albums_from_artist(url.id, url.storefront, it(Config).region.language)
         done_handler = ParentDoneHandler(len(albums), on_children_done)
         for album_url in albums:
-            safely_create_task(rip_album(Album.parse_url(album_url), codec, flags, done_handler))
+            safely_create_task(
+                rip_album(Album.parse_url(album_url), codec, flags, done_handler, log_callback=log_callback))
 
 
-async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags()):
+async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags(),
+                       log_callback: Callable[[str], Awaitable[None]] = None):
     playlist_info = await it(WebAPI).get_playlist_info_and_tracks(url.id, url.storefront, it(Config).region.language)
     playlist_info = playlist_write_song_index(playlist_info)
-    logger = RipLogger(url.type, url.id)
+    logger = RipLogger(url.type, url.id, log_callback)
     logger.set_fullname(playlist_info.data[0].attributes.curatorName, playlist_info.data[0].attributes.name)
 
     logger.create()
@@ -260,4 +270,4 @@ async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags()):
 
     for track in playlist_info.data[0].relationships.tracks.data:
         song = Song(id=track.id, storefront=url.storefront, url="", type=URLType.Song)
-        safely_create_task(rip_song(song, codec, flags, done_handler, playlist=playlist_info))
+        safely_create_task(rip_song(song, codec, flags, done_handler, playlist=playlist_info, log_callback=log_callback))

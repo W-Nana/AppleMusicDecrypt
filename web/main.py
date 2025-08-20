@@ -1,8 +1,9 @@
 # web/main.py
 import asyncio
 import json
+import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from pathlib import Path
 import sys
 from typing import List
@@ -30,6 +31,7 @@ from src.utils import safely_create_task, run_sync
 from creart import it
 
 app = FastAPI()
+DOWNLOADS_DIR = Path("downloads")
 
 class ConnectionManager:
     def __init__(self):
@@ -56,15 +58,20 @@ async def send_progress_updates():
             decrypt_speed = it(SpeedMeasurer).decrypt_speed()
             
             tasks = []
-            for task_id, task in adam_id_task_mapping.items():
+            refresh_needed = False
+            for task_id, task in list(adam_id_task_mapping.items()):
                 # Safely access metadata and its attributes
                 metadata = getattr(task, 'metadata', None)
+                task_status = task.status.value
                 tasks.append({
                     "id": task_id,
                     "name": getattr(metadata, 'title', 'Loading...'),
                     "artist": getattr(metadata, 'artist', 'N/A'),
-                    "status": task.status.value
+                    "status": task_status
                 })
+                if task_status == "DONE":
+                    refresh_needed = True
+
 
             progress = {
                 "type": "progress",
@@ -73,10 +80,15 @@ async def send_progress_updates():
                 "tasks": tasks
             }
             await manager.broadcast(json.dumps(progress))
+            if refresh_needed:
+                await manager.broadcast(json.dumps({"type": "download_complete"}))
 
 
 @app.on_event("startup")
 async def startup_event():
+    # Ensure downloads directory exists
+    DOWNLOADS_DIR.mkdir(exist_ok=True)
+    
     # Initialize all the necessary components
     config = it(Config)
     web_api = it(WebAPI)
@@ -98,6 +110,35 @@ async def startup_event():
 @app.get("/")
 async def get():
     return HTMLResponse(Path("web/static/index.html").read_text())
+
+def get_file_tree(path):
+    tree = []
+    for item in sorted(os.listdir(path)):
+        item_path = path / item
+        if item.startswith('.'):
+            continue
+        node = {"name": item}
+        if item_path.is_dir():
+            node["type"] = "directory"
+            node["children"] = get_file_tree(item_path)
+        else:
+            node["type"] = "file"
+        tree.append(node)
+    return tree
+
+@app.get("/files")
+async def list_files():
+    if not DOWNLOADS_DIR.exists():
+        return {"error": "Downloads directory not found"}, 404
+    return get_file_tree(DOWNLOADS_DIR)
+
+@app.get("/download/{file_path:path}")
+async def download_file(file_path: str):
+    full_path = DOWNLOADS_DIR / file_path
+    if full_path.exists() and full_path.is_file():
+        return FileResponse(full_path, media_type='application/octet-stream', filename=full_path.name)
+    return {"error": "File not found"}, 404
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

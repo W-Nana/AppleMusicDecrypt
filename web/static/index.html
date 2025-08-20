@@ -38,6 +38,17 @@
             padding-bottom: 0.5rem;
             margin-bottom: 1.5rem;
         }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #refreshBtn {
+             padding: 0.5rem 1rem;
+             font-size: 0.9rem;
+        }
 
         .input-section {
             display: flex;
@@ -136,6 +147,36 @@
             user-select: auto; /* 允许在日志框中选择文本 */
         }
 
+        #file-explorer {
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 200px;
+            margin-bottom: 2rem;
+        }
+        
+        .file-tree ul {
+            padding-left: 20px;
+            list-style-type: none;
+        }
+
+        .file-tree li {
+            padding: 4px 0;
+        }
+
+        .file-tree .directory > span, .file-tree .file > span {
+            cursor: pointer;
+        }
+        
+        .file-tree .directory > span:hover, .file-tree .file > span:hover {
+            color: var(--primary-color);
+        }
+        
+        .file-tree .icon {
+            margin-right: 8px;
+        }
+
+
         @media (max-width: 600px) {
             body {
                 padding: 1rem;
@@ -170,6 +211,13 @@
             </div>
         </div>
 
+        <div class="section-header">
+            <h2>File Explorer</h2>
+            <button id="refreshBtn" onclick="fetchFiles()">Refresh</button>
+        </div>
+        <div id="file-explorer">
+        </div>
+
         <h2>Tasks</h2>
         <table id="tasks">
             <thead>
@@ -193,6 +241,7 @@
         const downloadSpeedElement = document.getElementById('downloadSpeed');
         const decryptSpeedElement = document.getElementById('decryptSpeed');
         const tasksTableBody = document.querySelector("#tasks tbody");
+        const fileExplorer = document.getElementById('file-explorer');
 
         ws.onmessage = function(event) {
             const data = JSON.parse(event.data);
@@ -216,6 +265,8 @@
                     titleCell.textContent = task.name;
                     statusCell.textContent = task.status;
                 });
+            } else if (data.type === 'download_complete') {
+                 fetchFiles();
             }
         };
         
@@ -232,6 +283,61 @@
                 startDownload();
             }
         });
+        
+        function renderFileTree(nodes, parentPath = '') {
+            const ul = document.createElement('ul');
+            ul.className = 'file-tree';
+
+            for (const node of nodes) {
+                const li = document.createElement('li');
+                const span = document.createElement('span');
+                const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+                
+                if (node.type === 'directory') {
+                    li.className = 'directory';
+                    span.innerHTML = `<span class="icon">📁</span> ${node.name}`;
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        const childUl = li.querySelector('ul');
+                        if (childUl) {
+                            childUl.style.display = childUl.style.display === 'none' ? 'block' : 'none';
+                        }
+                    };
+                    li.appendChild(span);
+                    if (node.children && node.children.length) {
+                        li.appendChild(renderFileTree(node.children, currentPath));
+                    }
+                } else {
+                    li.className = 'file';
+                    span.innerHTML = `<span class="icon">📄</span> ${node.name}`;
+                    span.onclick = () => {
+                        window.location.href = `/download/${currentPath}`;
+                    };
+                    li.appendChild(span);
+                }
+                ul.appendChild(li);
+            }
+            return ul;
+        }
+
+        async function fetchFiles() {
+            try {
+                const response = await fetch('/files');
+                const files = await response.json();
+                fileExplorer.innerHTML = ''; // Clear previous tree
+                if(files && !files.error && files.length > 0) {
+                    fileExplorer.appendChild(renderFileTree(files));
+                } else {
+                    fileExplorer.innerHTML = '<p>No files downloaded yet.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching file tree:', error);
+                fileExplorer.innerHTML = '<p>Error loading files.</p>';
+            }
+        }
+        
+        // Initial fetch
+        fetchFiles();
     </script>
 </body>
 </html>

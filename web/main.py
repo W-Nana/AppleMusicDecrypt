@@ -2,8 +2,11 @@
 import asyncio
 import json
 import os
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, FileResponse
+import zipfile
+from io import BytesIO
+from urllib.parse import quote
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Form, Query
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse, Response
 from pathlib import Path
 import sys
 from typing import List
@@ -111,26 +114,38 @@ async def startup_event():
 async def get():
     return HTMLResponse(Path("web/static/index.html").read_text())
 
-def get_file_tree(path):
-    tree = []
-    for item in sorted(os.listdir(path)):
-        item_path = path / item
+def get_file_tree(path, sort_by='name', sort_order='asc'):
+    items = []
+    for item in os.listdir(path):
         if item.startswith('.'):
             continue
+        items.append(item)
+    
+    reverse = sort_order == 'desc'
+    if sort_by == 'date':
+        key_func = lambda item: (path / item).stat().st_mtime
+    else: # Default to name
+        key_func = lambda item: item.lower()
+
+    sorted_items = sorted(items, key=key_func, reverse=reverse)
+
+    tree = []
+    for item in sorted_items:
+        item_path = path / item
         node = {"name": item}
         if item_path.is_dir():
             node["type"] = "directory"
-            node["children"] = get_file_tree(item_path)
+            node["children"] = get_file_tree(item_path, sort_by, sort_order)
         else:
             node["type"] = "file"
         tree.append(node)
     return tree
 
 @app.get("/files")
-async def list_files():
+async def list_files(sort_by: str = Query('name'), sort_order: str = Query('asc')):
     if not DOWNLOADS_DIR.exists():
         return {"error": "Downloads directory not found"}, 404
-    return get_file_tree(DOWNLOADS_DIR)
+    return get_file_tree(DOWNLOADS_DIR, sort_by, sort_order)
 
 @app.get("/download/{file_path:path}")
 async def download_file(file_path: str):
@@ -138,6 +153,34 @@ async def download_file(file_path: str):
     if full_path.exists() and full_path.is_file():
         return FileResponse(full_path, media_type='application/octet-stream', filename=full_path.name)
     return {"error": "File not found"}, 404
+    
+@app.post("/download-zip")
+async def download_zip(files: str = Form(...), zip_name: str = Form(...)):
+    file_list = json.loads(files)
+    
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for file_path in file_list:
+            full_path = DOWNLOADS_DIR / file_path
+            if full_path.exists() and full_path.is_file():
+                zip_file.write(full_path, arcname=file_path)
+
+    zip_buffer.seek(0)
+    
+    # Get the total size for the Content-Length header
+    zip_size = zip_buffer.getbuffer().nbytes
+    
+    # Encode the filename for the Content-Disposition header
+    encoded_zip_name = quote(f"{zip_name}.zip")
+
+    return Response(
+        content=zip_buffer.getvalue(),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_zip_name}",
+            "Content-Length": str(zip_size)
+        }
+    )
 
 
 @app.websocket("/ws")

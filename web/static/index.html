@@ -32,6 +32,35 @@
             max-width: 900px;
         }
 
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-button {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            color: var(--text-secondary-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         h1, h2 {
             color: var(--primary-color);
             border-bottom: 2px solid var(--primary-color);
@@ -43,11 +72,38 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
         
-        #refreshBtn {
+        .file-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        #refreshBtn, #downloadSelectedBtn, #sortOrderBtn {
              padding: 0.5rem 1rem;
              font-size: 0.9rem;
+        }
+        
+        #sortOrderBtn {
+            min-width: 40px;
+        }
+        
+        #sortBy, #searchInput {
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        #searchInput {
+            flex-grow: 1;
+            min-width: 200px;
         }
 
         .input-section {
@@ -152,28 +208,65 @@
             border-radius: 8px;
             padding: 1rem;
             min-height: 200px;
-            margin-bottom: 2rem;
         }
         
         .file-tree ul {
             padding-left: 20px;
             list-style-type: none;
         }
+        
+        .file-tree .directory > ul {
+            display: none;
+        }
 
         .file-tree li {
             padding: 4px 0;
         }
-
-        .file-tree .directory > span, .file-tree .file > span {
+        
+        .file-tree .directory > .node-content > .node-name, .file-tree .file > .node-content > .node-name {
             cursor: pointer;
         }
         
-        .file-tree .directory > span:hover, .file-tree .file > span:hover {
+        .file-tree .directory > .node-content > .node-name:hover, .file-tree .file > .node-content > .node-name:hover {
             color: var(--primary-color);
         }
         
         .file-tree .icon {
             margin-right: 8px;
+        }
+        
+        .node-content {
+            display: flex;
+            align-items: center;
+        }
+        
+        .node-content input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .progress-container {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 20px;
+            width: 0%;
+            background-color: var(--primary-color);
+            transition: width 0.1s linear;
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            color: var(--text-secondary-color);
         }
 
 
@@ -195,44 +288,68 @@
 <body>
     <div class="container">
         <h1>AppleMusicDecrypt</h1>
-        <div class="input-section">
-            <input id="urlInput" type="text" placeholder="Enter Apple Music URL"/>
-            <button onclick="startDownload()">Download</button>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'downloader')">Downloader</button>
+            <button class="tab-button" onclick="openTab(event, 'files')">Files</button>
         </div>
 
-        <div class="stats-section">
-            <div class="stat">
-                <div class="stat-label">Download Speed</div>
-                <div id="downloadSpeed" class="stat-value">0 B/s</div>
+        <div id="downloader" class="tab-content active">
+            <div class="input-section">
+                <input id="urlInput" type="text" placeholder="Enter Apple Music URL"/>
+                <button onclick="startDownload()">Download</button>
             </div>
-            <div class="stat">
-                <div class="stat-label">Decrypt Speed</div>
-                <div id="decryptSpeed" class="stat-value">0 B/s</div>
+
+            <div class="stats-section">
+                <div class="stat">
+                    <div class="stat-label">Download Speed</div>
+                    <div id="downloadSpeed" class="stat-value">0 B/s</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Decrypt Speed</div>
+                    <div id="decryptSpeed" class="stat-value">0 B/s</div>
+                </div>
+            </div>
+
+            <h2>Tasks</h2>
+            <table id="tasks">
+                <thead>
+                    <tr>
+                        <th>Artist</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+
+            <h2>Log</h2>
+            <pre id="log"></pre>
+        </div>
+
+        <div id="files" class="tab-content">
+            <div class="section-header">
+                <input id="searchInput" type="text" placeholder="Search files..."/>
+                <div class="file-controls">
+                    <select id="sortBy">
+                        <option value="name">Sort by Name</option>
+                        <option value="date">Sort by Date</option>
+                    </select>
+                    <button id="sortOrderBtn">↑</button>
+                    <button id="refreshBtn" onclick="fetchFiles()">Refresh</button>
+                    <button id="downloadSelectedBtn" onclick="downloadSelected()">Download Selected</button>
+                </div>
+            </div>
+            <div id="file-explorer">
+            </div>
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+                <div class="progress-text" id="progressText"></div>
             </div>
         </div>
-
-        <div class="section-header">
-            <h2>File Explorer</h2>
-            <button id="refreshBtn" onclick="fetchFiles()">Refresh</button>
-        </div>
-        <div id="file-explorer">
-        </div>
-
-        <h2>Tasks</h2>
-        <table id="tasks">
-            <thead>
-                <tr>
-                    <th>Artist</th>
-                    <th>Title</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-
-        <h2>Log</h2>
-        <pre id="log"></pre>
     </div>
 
     <script>
@@ -242,6 +359,17 @@
         const decryptSpeedElement = document.getElementById('decryptSpeed');
         const tasksTableBody = document.querySelector("#tasks tbody");
         const fileExplorer = document.getElementById('file-explorer');
+        const searchInput = document.getElementById('searchInput');
+        const sortBySelect = document.getElementById('sortBy');
+        const sortOrderBtn = document.getElementById('sortOrderBtn');
+
+        let currentSortBy = localStorage.getItem('sortBy') || 'date';
+        let currentSortOrder = localStorage.getItem('sortOrder') || 'desc';
+
+        // Set initial UI state
+        sortBySelect.value = currentSortBy;
+        sortOrderBtn.textContent = currentSortOrder === 'asc' ? '↑' : '↓';
+
 
         ws.onmessage = function(event) {
             const data = JSON.parse(event.data);
@@ -283,37 +411,95 @@
                 startDownload();
             }
         });
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const allNodes = fileExplorer.querySelectorAll('li');
+            allNodes.forEach(node => {
+                const nodeName = node.querySelector('.node-name').textContent.toLowerCase();
+                if (nodeName.includes(searchTerm)) {
+                    node.style.display = 'block';
+                    // Make sure parents are visible
+                    let parent = node.parentElement;
+                    while (parent && parent.tagName !== 'DIV') {
+                        if(parent.tagName === 'LI') {
+                           parent.style.display = 'block';
+                        }
+                        parent = parent.parentElement;
+                    }
+                } else {
+                    node.style.display = 'none';
+                }
+            });
+        });
         
+        sortBySelect.addEventListener('change', (e) => {
+            currentSortBy = e.target.value;
+            localStorage.setItem('sortBy', currentSortBy);
+            fetchFiles();
+        });
+
+        sortOrderBtn.addEventListener('click', () => {
+            currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            sortOrderBtn.textContent = currentSortOrder === 'asc' ? '↑' : '↓';
+            localStorage.setItem('sortOrder', currentSortOrder);
+            fetchFiles();
+        });
+
         function renderFileTree(nodes, parentPath = '') {
             const ul = document.createElement('ul');
             ul.className = 'file-tree';
+            
+            if (parentPath === '') {
+                ul.style.display = 'block';
+            }
 
             for (const node of nodes) {
                 const li = document.createElement('li');
-                const span = document.createElement('span');
+                li.className = node.type;
+                li.dataset.name = node.name;
                 const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
                 
+                const nodeContent = document.createElement('div');
+                nodeContent.className = 'node-content';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.dataset.path = currentPath;
+                checkbox.addEventListener('change', (e) => {
+                    const isChecked = e.target.checked;
+                    const childCheckboxes = li.querySelectorAll('input[type="checkbox"]');
+                    childCheckboxes.forEach(child => child.checked = isChecked);
+                });
+
+                const nodeNameSpan = document.createElement('span');
+                nodeNameSpan.className = 'node-name';
+                
                 if (node.type === 'directory') {
-                    li.className = 'directory';
-                    span.innerHTML = `<span class="icon">📁</span> ${node.name}`;
-                    span.onclick = (e) => {
+                    nodeNameSpan.innerHTML = `<span class="icon">📁</span> ${node.name}`;
+                    nodeNameSpan.onclick = (e) => {
                         e.stopPropagation();
                         const childUl = li.querySelector('ul');
                         if (childUl) {
                             childUl.style.display = childUl.style.display === 'none' ? 'block' : 'none';
                         }
                     };
-                    li.appendChild(span);
+                    
+                    nodeContent.appendChild(checkbox);
+                    nodeContent.appendChild(nodeNameSpan);
+                    li.appendChild(nodeContent);
                     if (node.children && node.children.length) {
-                        li.appendChild(renderFileTree(node.children, currentPath));
+                        const childrenUl = renderFileTree(node.children, currentPath)
+                        li.appendChild(childrenUl);
                     }
                 } else {
-                    li.className = 'file';
-                    span.innerHTML = `<span class="icon">📄</span> ${node.name}`;
-                    span.onclick = () => {
+                    nodeNameSpan.innerHTML = `<span class="icon">📄</span> ${node.name}`;
+                    nodeNameSpan.onclick = () => {
                         window.location.href = `/download/${currentPath}`;
                     };
-                    li.appendChild(span);
+                    nodeContent.appendChild(checkbox);
+                    nodeContent.appendChild(nodeNameSpan);
+                    li.appendChild(nodeContent);
                 }
                 ul.appendChild(li);
             }
@@ -322,7 +508,7 @@
 
         async function fetchFiles() {
             try {
-                const response = await fetch('/files');
+                const response = await fetch(`/files?sort_by=${currentSortBy}&sort_order=${currentSortOrder}`);
                 const files = await response.json();
                 fileExplorer.innerHTML = ''; // Clear previous tree
                 if(files && !files.error && files.length > 0) {
@@ -334,6 +520,114 @@
                 console.error('Error fetching file tree:', error);
                 fileExplorer.innerHTML = '<p>Error loading files.</p>';
             }
+        }
+        
+        async function downloadSelected() {
+            const selectedFiles = [];
+            const checkboxes = fileExplorer.querySelectorAll('input[type="checkbox"]:checked');
+            
+            if (checkboxes.length === 0) {
+                alert("No files selected.");
+                return;
+            }
+
+            let firstSelectedElement = checkboxes[0].closest('li');
+            let zipName = '';
+
+            if (firstSelectedElement.classList.contains('directory')) {
+                zipName = firstSelectedElement.dataset.name;
+            } else {
+                zipName = firstSelectedElement.dataset.name.split('.').slice(0, -1).join('.');
+            }
+
+
+            checkboxes.forEach(checkbox => {
+                const li = checkbox.closest('li');
+                if (li.classList.contains('file')) {
+                    selectedFiles.push(checkbox.dataset.path);
+                }
+            });
+            
+            if (selectedFiles.length > 0) {
+                const formData = new FormData();
+                formData.append('files', JSON.stringify(selectedFiles));
+                formData.append('zip_name', zipName);
+                
+                const progressContainer = document.getElementById('progressContainer');
+                const progressBarFill = document.getElementById('progressBarFill');
+                const progressText = document.getElementById('progressText');
+
+                progressContainer.style.display = 'block';
+                progressBarFill.style.width = '0%';
+                progressText.textContent = 'Starting download...';
+                
+                try {
+                    const response = await fetch('/download-zip', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.statusText}`);
+                    }
+                    
+                    const totalSize = Number(response.headers.get('Content-Length'));
+                    let loaded = 0;
+                    
+                    const reader = response.body.getReader();
+                    const chunks = [];
+                    
+                    while(true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            break;
+                        }
+                        chunks.push(value);
+                        loaded += value.length;
+                        
+                        const percentage = totalSize ? (loaded / totalSize) * 100 : 0;
+                        progressBarFill.style.width = `${percentage}%`;
+                        progressText.textContent = `Downloading... ${Math.round(percentage)}% (${(loaded / 1024 / 1024).toFixed(2)} MB / ${(totalSize / 1024 / 1024).toFixed(2)} MB)`;
+                    }
+                    
+                    progressText.textContent = 'Download complete! Saving file...';
+
+                    const blob = new Blob(chunks);
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${zipName}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    setTimeout(() => {
+                         progressContainer.style.display = 'none';
+                    }, 3000);
+
+                } catch (error) {
+                    console.error('Download failed:', error);
+                    progressText.textContent = `Error: ${error.message}`;
+                }
+
+            } else {
+                alert("No files selected to download.");
+            }
+        }
+        
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
         }
         
         // Initial fetch

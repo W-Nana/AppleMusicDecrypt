@@ -8,12 +8,33 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         :root {
-            --background-color: #121212;
-            --surface-color: #1E1E1E;
+            --background-color: #f4f4f4;
+            --surface-color: #ffffff;
             --primary-color: #1DB954;
-            --text-color: #FFFFFF;
-            --text-secondary-color: #B3B3B3;
+            --text-color: #333333;
+            --text-secondary-color: #777777;
+            --border-color: #dddddd;
+            --accent-color: #007bff;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            --background-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #1ED760;
+            --text-color: #ffffff;
+            --text-secondary-color: #b3b3b3;
             --border-color: #2c2c2c;
+        }
+        
+        * {
+            /* Hide caret by default */
+            caret-color: transparent;
+        }
+
+        /* Show caret on specific input fields */
+        #urlInput, #searchInput {
+            caret-color: auto;
         }
 
         body {
@@ -21,31 +42,38 @@
             background-color: var(--background-color);
             color: var(--text-color);
             margin: 0;
-            padding: 2rem;
+            padding: 20px;
             display: flex;
             justify-content: center;
-            user-select: none; /* 禁止选择文本 */
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
             width: 100%;
-            max-width: 900px;
+            max-width: 960px;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
         }
 
         .tabs {
             display: flex;
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: 1.5rem;
         }
 
         .tab-button {
-            padding: 1rem 1.5rem;
+            padding: 10px 15px;
             cursor: pointer;
             border: none;
             background-color: transparent;
             color: var(--text-secondary-color);
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
         }
 
         .tab-button.active {
@@ -53,39 +81,74 @@
             border-bottom: 2px solid var(--primary-color);
         }
 
+        #themeSelector {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+        
         .tab-content {
             display: none;
+            background-color: var(--surface-color);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .tab-content.active {
             display: block;
         }
 
-        h1, h2 {
+        h1 {
+            text-align: center;
             color: var(--primary-color);
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 25px;
+        }
+        
+        h2 {
+            color: var(--text-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
         }
         
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 10px;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 10px;
         }
         
         .file-controls {
             display: flex;
-            gap: 1rem;
+            gap: 10px;
             align-items: center;
         }
         
         #refreshBtn, #downloadSelectedBtn, #sortOrderBtn {
-             padding: 0.5rem 1rem;
+             padding: 8px 12px;
              font-size: 0.9rem;
+             border: 1px solid var(--border-color);
+             border-radius: 5px;
+             background-color: var(--surface-color);
+             color: var(--text-color);
+             cursor: pointer;
+             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        #refreshBtn:hover, #downloadSelectedBtn:hover, #sortOrderBtn:hover {
+             background-color: var(--primary-color);
+             color: #fff;
+             border-color: var(--primary-color);
         }
         
         #sortOrderBtn {
@@ -93,65 +156,71 @@
         }
         
         #sortBy, #searchInput {
-            padding: 0.8rem 1rem;
+            padding: 8px 10px;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 5px;
             background-color: var(--surface-color);
             color: var(--text-color);
             font-size: 0.9rem;
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+
+        #searchInput:focus, #sortBy:focus {
+            outline: none;
+            border-color: var(--accent-color);
         }
 
         #searchInput {
             flex-grow: 1;
-            min-width: 200px;
+            min-width: 150px;
         }
 
         .input-section {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
+            gap: 10px;
+            margin-bottom: 20px;
         }
 
         #urlInput {
             flex-grow: 1;
-            padding: 0.8rem 1rem;
+            padding: 10px;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 5px;
             background-color: var(--surface-color);
             color: var(--text-color);
             font-size: 1rem;
-            user-select: auto; /* 允许在输入框中选择文本 */
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
         }
 
         #urlInput:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 5px var(--primary-color);
+            border-color: var(--accent-color);
         }
 
         button {
-            padding: 0.8rem 1.5rem;
+            padding: 10px 15px;
             border: none;
-            border-radius: 8px;
+            border-radius: 5px;
             background-color: var(--primary-color);
-            color: var(--text-color);
+            color: #fff;
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
 
         button:hover {
-            background-color: #1ED760;
+            background-color: #16a042;
         }
 
         .stats-section {
             display: flex;
             justify-content: space-around;
-            background-color: var(--surface-color);
-            padding: 1rem;
+            padding: 15px;
             border-radius: 8px;
-            margin-bottom: 2rem;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .stat {
@@ -160,58 +229,67 @@
 
         .stat-label {
             color: var(--text-secondary-color);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
 
         .stat-value {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
         }
 
         #tasks {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 2rem;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         #tasks th, #tasks td {
-            padding: 1rem;
+            padding: 10px 12px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
 
         #tasks th {
             background-color: var(--surface-color);
-            color: var(--primary-color);
+            color: var(--text-color);
             font-weight: 600;
-        }
-        
-        #tasks tbody tr:hover {
-            background-color: #2a2a2a;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
+        #tasks tbody tr:hover {
+            background-color: rgba(0,0,0,0.02);
+        }
+
+        body.dark-mode #tasks tbody tr:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        
         #log {
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 1rem;
-            height: 300px;
+            padding: 15px;
+            height: 200px;
             overflow-y: scroll;
             white-space: pre-wrap;
             word-wrap: break-word;
             font-family: 'Courier New', Courier, monospace;
-            user-select: auto; /* 允许在日志框中选择文本 */
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
         }
 
         #file-explorer {
             background-color: var(--surface-color);
             border-radius: 8px;
-            padding: 1rem;
-            min-height: 200px;
+            padding: 15px;
+            min-height: 150px;
+            transition: background-color 0.3s ease;
         }
         
         .file-tree ul {
-            padding-left: 20px;
+            padding-left: 15px;
             list-style-type: none;
         }
         
@@ -220,86 +298,146 @@
         }
 
         .file-tree li {
-            padding: 4px 0;
+            padding: 3px 0;
         }
         
-        .file-tree .directory > .node-content > .node-name, .file-tree .file > .node-content > .node-name {
+        .file-tree .directory > .node-content > .node-name,
+        .file-tree .file > .node-content > .node-name {
             cursor: pointer;
+            transition: color 0.3s ease;
         }
-        
-        .file-tree .directory > .node-content > .node-name:hover, .file-tree .file > .node-content > .node-name:hover {
+
+        .file-tree .directory > .node-content > .node-name:hover,
+        .file-tree .file > .node-content > .node-name:hover {
             color: var(--primary-color);
         }
         
         .file-tree .icon {
-            margin-right: 8px;
+            margin-right: 5px;
         }
         
         .node-content {
             display: flex;
             align-items: center;
         }
-        
-        .node-content input[type="checkbox"] {
+
+        .node-content input {
             margin-right: 8px;
+            accent-color: var(--primary-color);
         }
 
         .progress-container {
-            margin-top: 1rem;
+            margin-top: 10px;
             display: none;
         }
 
         .progress-bar {
             width: 100%;
-            background-color: var(--surface-color);
-            border-radius: 8px;
+            background-color: var(--border-color);
+            border-radius: 5px;
             overflow: hidden;
         }
 
         .progress-bar-fill {
-            height: 20px;
+            height: 15px;
             width: 0%;
             background-color: var(--primary-color);
+            border-radius: 5px;
             transition: width 0.1s linear;
         }
         
         .progress-text {
             text-align: center;
-            margin-top: 0.5rem;
+            margin-top: 5px;
             color: var(--text-secondary-color);
+            font-size: 0.8rem;
         }
 
-
-        @media (max-width: 600px) {
+        /* Mobile Support */
+        @media (max-width: 768px) {
             body {
-                padding: 1rem;
+                padding: 10px;
             }
+
+            .header-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tabs {
+                width: 100%;
+                justify-content: space-around;
+            }
+
+            #themeSelector {
+                width: 100%;
+                margin-top: 10px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .file-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            #searchInput, #sortBy, #refreshBtn, #downloadSelectedBtn, #sortOrderBtn {
+                width: 100%;
+                box-sizing: border-box; /* Ensures padding doesn't affect width */
+                margin-bottom: 5px;
+            }
+
             .input-section {
                 flex-direction: column;
             }
+            
+            #urlInput, button {
+                 width: 100%;
+                 box-sizing: border-box;
+                 margin-bottom: 5px;
+            }
+
             .stats-section {
                 flex-direction: column;
-                gap: 1rem;
+                gap: 10px;
+            }
+
+            #tasks th, #tasks td {
+                padding: 8px;
+                font-size: 0.85rem;
+            }
+
+            .file-tree ul {
+                padding-left: 10px;
             }
         }
-
     </style>
 </head>
 <body>
     <div class="container">
         <h1>AppleMusicDecrypt</h1>
 
-        <div class="tabs">
-            <button class="tab-button active" onclick="openTab(event, 'downloader')">Downloader</button>
-            <button class="tab-button" onclick="openTab(event, 'files')">Files</button>
+        <div class="header-controls">
+            <div class="tabs">
+                <button class="tab-button active" onclick="openTab(event, 'downloader')">Downloader</button>
+                <button class="tab-button" onclick="openTab(event, 'files')">Files</button>
+            </div>
+            <select id="themeSelector">
+                <option value="system">Follow System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
         </div>
 
         <div id="downloader" class="tab-content active">
-            <div class="input-section">
+             <div class="input-section">
                 <input id="urlInput" type="text" placeholder="Enter Apple Music URL"/>
                 <button onclick="startDownload()">Download</button>
             </div>
-
+            
             <div class="stats-section">
                 <div class="stat">
                     <div class="stat-label">Download Speed</div>
@@ -353,7 +491,9 @@
     </div>
 
     <script>
-        const ws = new WebSocket(`ws://${window.location.host}/ws`);
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+
         const logElement = document.getElementById('log');
         const downloadSpeedElement = document.getElementById('downloadSpeed');
         const decryptSpeedElement = document.getElementById('decryptSpeed');
@@ -362,15 +502,50 @@
         const searchInput = document.getElementById('searchInput');
         const sortBySelect = document.getElementById('sortBy');
         const sortOrderBtn = document.getElementById('sortOrderBtn');
+        const themeSelector = document.getElementById('themeSelector');
+        const body = document.body;
 
         let currentSortBy = localStorage.getItem('sortBy') || 'date';
         let currentSortOrder = localStorage.getItem('sortOrder') || 'desc';
 
-        // Set initial UI state
+        // Set initial UI state for sorting
         sortBySelect.value = currentSortBy;
         sortOrderBtn.textContent = currentSortOrder === 'asc' ? '↑' : '↓';
 
+        // --- Theme Logic ---
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
 
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                body.classList.add('dark-mode');
+            } else if (theme === 'light') {
+                body.classList.remove('dark-mode');
+            } else { // 'system'
+                if (systemPrefersDark.matches) {
+                    body.classList.add('dark-mode');
+                } else {
+                    body.classList.remove('dark-mode');
+                }
+            }
+        }
+
+        let currentTheme = localStorage.getItem('theme') || 'system';
+        themeSelector.value = currentTheme;
+        applyTheme(currentTheme);
+
+        themeSelector.addEventListener('change', (e) => {
+            currentTheme = e.target.value;
+            localStorage.setItem('theme', currentTheme);
+            applyTheme(currentTheme);
+        });
+        
+        systemPrefersDark.addEventListener('change', (e) => {
+            if (currentTheme === 'system') {
+                applyTheme('system');
+            }
+        });
+        
+        // --- WebSocket Logic ---
         ws.onmessage = function(event) {
             const data = JSON.parse(event.data);
             if (data.type === 'log') {
@@ -382,8 +557,7 @@
                 downloadSpeedElement.textContent = data.download_speed;
                 decryptSpeedElement.textContent = data.decrypt_speed;
 
-                // Update tasks table
-                tasksTableBody.innerHTML = ''; // Clear table
+                tasksTableBody.innerHTML = ''; 
                 data.tasks.forEach(function(task) {
                     const row = tasksTableBody.insertRow();
                     const artistCell = row.insertCell(0);
@@ -411,7 +585,8 @@
                 startDownload();
             }
         });
-
+        
+        // --- File Explorer Logic ---
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const allNodes = fileExplorer.querySelectorAll('li');
@@ -419,7 +594,6 @@
                 const nodeName = node.querySelector('.node-name').textContent.toLowerCase();
                 if (nodeName.includes(searchTerm)) {
                     node.style.display = 'block';
-                    // Make sure parents are visible
                     let parent = node.parentElement;
                     while (parent && parent.tagName !== 'DIV') {
                         if(parent.tagName === 'LI') {
@@ -445,6 +619,28 @@
             localStorage.setItem('sortOrder', currentSortOrder);
             fetchFiles();
         });
+
+        function getFileIcon(filename) {
+            const extension = filename.split('.').pop().toLowerCase();
+            switch (extension) {
+                case 'm4a':
+                case 'mp3':
+                case 'aac':
+                case 'flac':
+                case 'alac':
+                case 'wav':
+                    return '🎵';
+                case 'lrc':
+                    return '🎤';
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'gif':
+                    return '🖼️';
+                default:
+                    return '📄';
+            }
+        }
 
         function renderFileTree(nodes, parentPath = '') {
             const ul = document.createElement('ul');
@@ -481,7 +677,11 @@
                         e.stopPropagation();
                         const childUl = li.querySelector('ul');
                         if (childUl) {
-                            childUl.style.display = childUl.style.display === 'none' ? 'block' : 'none';
+                           if (childUl.style.display === 'block') {
+                                childUl.style.display = 'none';
+                            } else {
+                                childUl.style.display = 'block';
+                            }
                         }
                     };
                     
@@ -493,7 +693,8 @@
                         li.appendChild(childrenUl);
                     }
                 } else {
-                    nodeNameSpan.innerHTML = `<span class="icon">📄</span> ${node.name}`;
+                    const icon = getFileIcon(node.name);
+                    nodeNameSpan.innerHTML = `<span class="icon">${icon}</span> ${node.name}`;
                     nodeNameSpan.onclick = () => {
                         window.location.href = `/download/${currentPath}`;
                     };
@@ -510,7 +711,7 @@
             try {
                 const response = await fetch(`/files?sort_by=${currentSortBy}&sort_order=${currentSortOrder}`);
                 const files = await response.json();
-                fileExplorer.innerHTML = ''; // Clear previous tree
+                fileExplorer.innerHTML = '';
                 if(files && !files.error && files.length > 0) {
                     fileExplorer.appendChild(renderFileTree(files));
                 } else {
@@ -537,9 +738,8 @@
             if (firstSelectedElement.classList.contains('directory')) {
                 zipName = firstSelectedElement.dataset.name;
             } else {
-                zipName = firstSelectedElement.dataset.name.split('.').slice(0, -1).join('.');
+                zipName = firstSelectedElement.dataset.name.split('.').slice(0, -1).join('.') || firstSelectedElement.dataset.name;
             }
-
 
             checkboxes.forEach(checkbox => {
                 const li = checkbox.closest('li');
@@ -579,9 +779,7 @@
                     
                     while(true) {
                         const { done, value } = await reader.read();
-                        if (done) {
-                            break;
-                        }
+                        if (done) break;
                         chunks.push(value);
                         loaded += value.length;
                         
@@ -617,7 +815,7 @@
         }
         
         function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
+            let i, tabcontent, tablinks;
             tabcontent = document.getElementsByClassName("tab-content");
             for (i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";

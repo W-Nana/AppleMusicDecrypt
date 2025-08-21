@@ -31,7 +31,8 @@ mutagen = "^1.47.0"
 hishel = "^0.1.2"
 async-lru = "^2.0.5"
 fastapi = "^0.111.1"
-uvicorn = "^0.30.3"
+uvicorn = {extras = ["standard"], version = "^0.30.3"}
+python-multipart = "^0.0.9"
 
 [build-system]
 requires = ["poetry-core"]

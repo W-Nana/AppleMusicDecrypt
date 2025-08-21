@@ -35,6 +35,7 @@ from creart import it
 
 app = FastAPI()
 DOWNLOADS_DIR = Path("downloads")
+log_history = []
 
 class ConnectionManager:
     def __init__(self):
@@ -48,6 +49,7 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
+        log_history.append(message)
         for connection in self.active_connections:
             await connection.send_text(message)
 
@@ -114,20 +116,31 @@ async def startup_event():
 async def get():
     return HTMLResponse(Path("web/static/index.html").read_text())
 
-def get_file_tree(path, sort_by='name', sort_order='asc'):
-    items = []
-    for item in os.listdir(path):
-        if item.startswith('.'):
-            continue
-        items.append(item)
+def get_file_tree(path, sort_by='name', sort_order='asc', is_top_level=True):
+    items = [item for item in os.listdir(path) if not item.startswith('.')]
     
-    reverse = sort_order == 'desc'
-    if sort_by == 'date':
-        key_func = lambda item: (path / item).stat().st_mtime
-    else: # Default to name
-        key_func = lambda item: item.lower()
+    if is_top_level:
+        # Separate folders and files at the top level
+        folders = [item for item in items if (path / item).is_dir()]
+        files = [item for item in items if not (path / item).is_dir()]
 
-    sorted_items = sorted(items, key=key_func, reverse=reverse)
+        # Sort folders based on user's choice
+        reverse = sort_order == 'desc'
+        if sort_by == 'date':
+            folder_key_func = lambda item: (path / item).stat().st_mtime
+        else:
+            folder_key_func = lambda item: item.lower()
+        
+        sorted_folders = sorted(folders, key=folder_key_func, reverse=reverse)
+        
+        # Sort files always by name
+        sorted_files = sorted(files, key=lambda item: item.lower())
+        
+        # Combine them, folders first
+        sorted_items = sorted_folders + sorted_files
+    else:
+        # For subdirectories, always sort by name
+        sorted_items = sorted(items, key=lambda item: item.lower())
 
     tree = []
     for item in sorted_items:
@@ -135,7 +148,8 @@ def get_file_tree(path, sort_by='name', sort_order='asc'):
         node = {"name": item}
         if item_path.is_dir():
             node["type"] = "directory"
-            node["children"] = get_file_tree(item_path, sort_by, sort_order)
+            # Recursive call is no longer top level
+            node["children"] = get_file_tree(item_path, sort_by, sort_order, is_top_level=False)
         else:
             node["type"] = "file"
         tree.append(node)
@@ -145,7 +159,7 @@ def get_file_tree(path, sort_by='name', sort_order='asc'):
 async def list_files(sort_by: str = Query('name'), sort_order: str = Query('asc')):
     if not DOWNLOADS_DIR.exists():
         return {"error": "Downloads directory not found"}, 404
-    return get_file_tree(DOWNLOADS_DIR, sort_by, sort_order)
+    return get_file_tree(DOWNLOADS_DIR, sort_by, sort_order, is_top_level=True)
 
 @app.get("/download/{file_path:path}")
 async def download_file(file_path: str):
@@ -167,10 +181,7 @@ async def download_zip(files: str = Form(...), zip_name: str = Form(...)):
 
     zip_buffer.seek(0)
     
-    # Get the total size for the Content-Length header
     zip_size = zip_buffer.getbuffer().nbytes
-    
-    # Encode the filename for the Content-Disposition header
     encoded_zip_name = quote(f"{zip_name}.zip")
 
     return Response(
@@ -182,21 +193,23 @@ async def download_zip(files: str = Form(...), zip_name: str = Form(...)):
         }
     )
 
-
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
+    # Send history to the newly connected client
+    for msg in log_history:
+        await websocket.send_text(msg)
     try:
         while True:
             data = await websocket.receive_text()
             url = AppleMusicURL.parse_url(data)
             if not url:
-                await websocket.send_text(json.dumps({"type": "log", "message": "Invalid URL"}))
+                await manager.broadcast(json.dumps({"type": "log", "message": "Invalid URL"}))
                 continue
 
             async def log_to_websocket(message: str):
                 try:
-                    await websocket.send_text(json.dumps({"type": "log", "message": message.strip()}))
+                    await manager.broadcast(json.dumps({"type": "log", "message": message.strip()}))
                 except WebSocketDisconnect:
                     pass
 
